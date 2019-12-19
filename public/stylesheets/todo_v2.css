@@ -323,7 +323,7 @@ input[type="checkbox"] + section {
 #form_modal{
   display: none;
   position: absolute;
-  top: 0;
+  top: 200px;
   left: 50%;
   margin-left: -287.5px;
   width: 575px;
