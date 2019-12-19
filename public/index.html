@@ -184,17 +184,17 @@
     </script>
     <script type="text/x-handlebars" id="all_list_template" data-type="partial">
       {{#each todos_by_date}}
-        <dl data-title="{{@key}}" data-total="{{this.length}}">
-          <dt><time>{{@key}}</time></dt>
-          <dd>{{this.length}}</dd>
+        <dl data-title="{{title}}" data-total="{{this.length}}">
+          <dt><time>{{title}}</time></dt>
+          <dd>{{todos.length}}</dd>
         </dl>
       {{/each}}
     </script>
     <script type="text/x-handlebars" id="completed_list_template" data-type="partial">
       {{#each done_todos_by_date}}
-        <dl data-title="{{@key}}" data-total="{{this.length}}" id="{{@key}}">
-          <dt><time>{{@key}}</time></dt>
-          <dd>{{this.length}}</dd>
+        <dl data-title="{{title}}" data-total="{{this.length}}" id="{{title}}">
+          <dt><time>{{title}}</time></dt>
+          <dd>{{todos.length}}</dd>
         </dl>
       {{/each}}
     </script>
