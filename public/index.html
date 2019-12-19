@@ -192,7 +192,7 @@
     </script>
     <script type="text/x-handlebars" id="completed_list_template" data-type="partial">
       {{#each done_todos_by_date}}
-        <dl data-title="{{title}}" data-total="{{this.length}}" id="{{title}}">
+        <dl data-title="{{title}}" data-total="{{this.length}}" data-stat="completed">
           <dt><time>{{title}}</time></dt>
           <dd>{{todos.length}}</dd>
         </dl>

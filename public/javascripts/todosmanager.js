@@ -20,54 +20,31 @@ $(function() {
   };
 
   let viewObject = { // REFACTOR dont return displayObject but make view object itself be the return for display.
-    displayObject: {
-      todos: null,
-      current_section: {},
-      selected: null
-    },
+    current_section: {},
 
     allTodosView: function() {
-      this.displayObject.selected = this.displayObject.todos;
-      this.displayObject.current_section.title = "All Todos";
-      this.displayObject.current_section.data  = this.displayObject.selected.length;
-      
-      return this.displayObject;      
+      this.selected = this.todos;
+      this.current_section.title = "All Todos";
+      this.current_section.data  = this.selected.length;
+      return this;      
     },
 
-    todosByDateView: function(date) {
-      this.displayObject.selected = this.displayObject.todos.filter(todo => todo.due_date === date);
-      this.displayObject.current_section.title = date;
-      this.displayObject.current_section.data  = this.displayObject.selected.length;
-      
-      return this.displayObject;
+    todosByDateView: function(date, completed=false) {
+      this.selected = this.todos.filter(todo => todo.due_date === date);
+      if ( completed ) { this.selected = this.selected.filter(todo => todo.completed) };
+      this.current_section.title = date;
+      this.current_section.data  = this.selected.length;
+      return this;
     },
 
     completedTodosView: function() {
-      this.displayObject.selected = this.displayObject.done;
-      this.displayObject.current_section.title = "Completed";
-      this.displayObject.current_section.data  = this.displayObject.selected.length;
-      
-      return this.displayObject;
+      this.selected = this.done;
+      this.current_section.title = "Completed";
+      this.current_section.data  = this.selected.length;
+      return this;
     },
 
-    todosByDate: function() {
-      let todos = this.displayObject.todos;
-      let dateLists = {};
-      let todosByDate = [];
-      todos.filter(todo => !todo.completed).forEach(function(todo) {
-        if (dateLists[todo.due_date]) {
-          dateLists[todo.due_date].push(todo);
-        } else {
-          dateLists[todo.due_date] = [todo];
-        }
-      });
-
-      Object.keys(dateLists).forEach(k => todosByDate.push({title: k, todos: dateLists[k]}));
-      return todosByDate;
-    },
-    // REFACTOR all of the non DRY code between these 2 funcs.
-    doneTodosByDate: function() {
-      let todos = this.displayObject.done;
+    todosByDate: function(todos) {
       let dateLists = {};
       let todosByDate = [];
       todos.forEach(function(todo) {
@@ -83,10 +60,10 @@ $(function() {
     },
 
     updateViewObject: function(allTodos) {
-      this.displayObject.todos = allTodos;
-      this.displayObject.done = allTodos.filter(todo => todo.completed);
-      this.displayObject.todos_by_date = this.todosByDate();
-      this.displayObject.done_todos_by_date = this.doneTodosByDate();
+      this.todos = allTodos;
+      this.done = allTodos.filter(todo => todo.completed);
+      this.todos_by_date = this.todosByDate(this.todos);
+      this.done_todos_by_date = this.todosByDate(this.done);
     }
   }
 
@@ -97,13 +74,13 @@ $(function() {
       return todos.sort(sortByStatus);
     },
 
-    sendDisplay: function(group) {
+    sendDisplay: function(group, stat) {
       if ( group === "All Todos" ) {
         return viewObject.allTodosView.call(viewObject);
       } else if ( group === "Completed" ) {
         return viewObject.completedTodosView.call(viewObject);
       } else {
-        return viewObject.todosByDateView(group);
+        return viewObject.todosByDateView(group, stat);
       }
     },
 
@@ -165,8 +142,8 @@ $(function() {
       $("article").on("click", this.singleGroupRefresh.bind(this));
     },
 
-    displayTodos: function(group) {
-      let displayGroup = todoManager.sendDisplay(group);
+    displayTodos: function(group, stat=null) {
+      let displayGroup = todoManager.sendDisplay(group, stat);
       $("body").html(this.$mainTemplate(displayGroup));
       $("td.list_item").on("click", app.toggleMarkComplete.bind(app));
     },
@@ -174,12 +151,13 @@ $(function() {
     singleGroupRefresh: function(e) {
       let $el = $(e.target).closest("dl");
       let listName = $el.attr("data-title");
-      this.refresh(listName);
+      let completedStat = $el.attr("data-stat");
+      this.refresh(listName, completedStat);
     },
 
-    refresh: function(group="All Todos") {
+    refresh: function(group="All Todos", stat=null) {
       app.currentDisplay = group;
-      this.displayTodos(group);
+      this.displayTodos(group, stat);
       this.bindEvents();
     }
   };
