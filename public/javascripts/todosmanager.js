@@ -1,7 +1,6 @@
 $(function() {
 
   (function() {
-    // registers all Handlebars partials
     $("[data-type='partial']").each(function(i) {
       let name = $(this).attr("id");
       let html = $(this).html();
@@ -10,28 +9,23 @@ $(function() {
   })();
 
   const sortByStatus = (a, b) => {
-    if ( a.completed && !b.completed ) {
-      return 1;
-    } else if ( !a.completed && b.completed ) {
-      return -1;
-    } else {
-      return 0;
-    }
+    if (a.completed == b.completed) { return 0 };
+    return a.completed && !b.completed ? 1 : -1;
   };
 
-  let viewObject = { // REFACTOR dont return displayObject but make view object itself be the return for display.
+  let viewObject = {
     current_section: {},
 
     allTodosView: function() {
       this.selected = this.todos;
       this.current_section.title = "All Todos";
       this.current_section.data  = this.selected.length;
-      return this;      
+      return this;
     },
 
-    todosByDateView: function(date, completed=false) {
+    todosByDateView: function(date) {
       this.selected = this.todos.filter(todo => todo.due_date === date);
-      if ( completed ) { this.selected = this.selected.filter(todo => todo.completed) };
+      if ( ui.completedsView ) { this.selected = this.selected.filter(todo => todo.completed) };
       this.current_section.title = date;
       this.current_section.data  = this.selected.length;
       return this;
@@ -74,13 +68,13 @@ $(function() {
       return todos.sort(sortByStatus);
     },
 
-    sendDisplay: function(group, stat) {
-      if ( group === "All Todos" ) {
+    sendDisplay: function(group) {
+      if ( group === "all_todos" ) {
         return viewObject.allTodosView.call(viewObject);
-      } else if ( group === "Completed" ) {
+      } else if ( group === "completed_todos" ) {
         return viewObject.completedTodosView.call(viewObject);
       } else {
-        return viewObject.todosByDateView(group, stat);
+        return viewObject.todosByDateView(group);
       }
     },
 
@@ -103,6 +97,7 @@ $(function() {
 
   let ui = {
     $mainTemplate: Handlebars.compile($("#main_template").html()),
+    completedsView: false,
 
     toggleModal: function(clearForm=false) {
       if (clearForm) {
@@ -137,30 +132,40 @@ $(function() {
       $("#form_modal button").on("click", app.markComplete.bind(app));
       $("td.delete").on("click", app.removeTodo.bind(app));
       $("#items tr label").on("click", this.raiseEditModal.bind(this));
-      $("#all_todos").on("click", this.refresh.bind(this, "All Todos"));
-      $("#completed_todos").on("click", this.refresh.bind(this, "Completed"));
+      $("#all_todos").on("click", this.categoryRefresh.bind(this));
+      $("#completed_todos").on("click", this.categoryRefresh.bind(this));
       $("article").on("click", this.singleGroupRefresh.bind(this));
     },
 
-    displayTodos: function(group, stat=null) {
-      let displayGroup = todoManager.sendDisplay(group, stat);
+    displayTodos: function(group) {
+      let displayGroup = todoManager.sendDisplay(group);
       $("body").html(this.$mainTemplate(displayGroup));
       $("td.list_item").on("click", app.toggleMarkComplete.bind(app));
+    },
+
+    categoryRefresh: function(e) {
+      e.stopPropagation();
+      let $div = $(e.target).closest("div");
+      let group = $div.attr("id");
+      this.refresh(group);
     },
 
     singleGroupRefresh: function(e) {
       let $el = $(e.target).closest("dl");
       let listName = $el.attr("data-title");
-      let completedStat = $el.attr("data-stat");
-      this.refresh(listName, completedStat);
+      console.log("list name: " + listName);
+      this.completedsView = $el.attr("data-stat");
+      this.refresh(listName);
     },
 
-    refresh: function(group="All Todos", stat=null) {
-      app.currentDisplay = group;
-      this.displayTodos(group, stat);
+    refresh: function(group="all_todos") {
+      this.currentDisplay = group;
+      this.displayTodos(group.replace("done", ""));
       this.bindEvents();
+      $(`[data-title='${group}']`).addClass("active");
     }
   };
+
 
   let app = {
     editing: false,
@@ -173,14 +178,10 @@ $(function() {
     toggleMarkComplete: function(e) {
       let todoData;
       let listId = +$(e.target).closest("tr").attr("data-id");
+      let todo   = todoManager.getTodoById(listId);
+      todoData   = todo.completed ? { completed: false } : { completed: true };
 
-      if ( todoManager.getTodoById(listId).completed ) {
-        todoData = JSON.stringify({completed: false});
-      } else {
-        todoData = JSON.stringify({completed: true});
-      }
-
-      api.updateTodo(todoData, listId);
+      api.updateTodo(JSON.stringify(todoData), listId);
     },
 
     markComplete: function(e) {
@@ -193,16 +194,14 @@ $(function() {
       let values = $form[0];
       data = {
         title: values[1].value,
-        day: values[2].value,
+        day:   values[2].value,
         month: values[3].value,
-        year: values[4].value,
+        year:  values[4].value,
         description: values[5].value
       };
 
       Object.keys(data).forEach(function(k) {
-        if(data[k] === "default") {
-          data[k] = "";
-        }
+        if(data[k] === "default") { data[k] = "" };
       });
 
       return data;
@@ -227,7 +226,7 @@ $(function() {
         if( this.editing ) {
           api.updateTodo(data, this.editingId);
         } else {
-          this.currentDisplay = "All Todos";
+          ui.currentDisplay = "all_todos";
           api.saveNewTodo(data);
         }
         ui.toggleModal(true);
@@ -238,11 +237,11 @@ $(function() {
 
     retrievalSuccessResponse: function(todos) {
       todoManager.assignTodos(todos);
-      ui.refresh(this.currentDisplay);
+      ui.refresh(ui.currentDisplay);
     },
 
     init: function() {
-      this.currentDisplay = "All Todos";
+      ui.currentDisplay = "all_todos";
       api.retrieveAllTodos();
     }
   };
@@ -293,5 +292,6 @@ $(function() {
       });
     },
   };
+
   app.init();
 });

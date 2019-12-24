@@ -78,22 +78,11 @@ header dt, header dd{
   display: inline-block;
   vertical-align: middle
 }
-#sidebar header.active{
+#sidebar div.active{
   background-color: #383f5f;
-  /*color: #ffffff;*/
-  margin-left: 0px;
-  background-position: 100px center;
-}
-#sidebar header.active dl{
-  /*background-color: #383f5f;*/
-  /*color: #ffffff;*/
-  margin-left: 100px;
 }
 
-#sidebar #completed_todos header.active dl {
-    margin-left: 0px;
-}
-#sidebar header.active dd{
+#sidebar div.active dd{
   background-color: #148fd5;
   color: #ffffff;
 }
